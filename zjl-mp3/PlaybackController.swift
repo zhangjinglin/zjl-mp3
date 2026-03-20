@@ -11,16 +11,18 @@ import Foundation
 import MediaPlayer
 
 final class PlaybackController: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    static let supportedPlaybackRates: [Float] = [1.0, 1.25, 1.5, 1.75, 2.0]
+
     @Published var playlist: [URL] = []
     @Published var currentIndex: Int? = nil
     @Published var isPlaying: Bool = false
     @Published var progress: Double = 0
     @Published var currentTime: Double = 0
     @Published var duration: Double = 0
+    @Published var playbackRate: Float = 1.5
     @Published var errorMessage: String? = nil
 
     private let bookmarkKey = "folderBookmark"
-    private let defaultRate: Float = 1.5
     private var audioPlayer: AVAudioPlayer?
     private var progressTimer: Timer?
     private var folderURL: URL?
@@ -157,6 +159,13 @@ final class PlaybackController: NSObject, ObservableObject, AVAudioPlayerDelegat
         updateNowPlayingInfo()
     }
 
+    func setPlaybackRate(_ rate: Float) {
+        guard Self.supportedPlaybackRates.contains(rate) else { return }
+        playbackRate = rate
+        audioPlayer?.rate = rate
+        updateNowPlayingInfo()
+    }
+
     func stop() {
         audioPlayer?.stop()
         audioPlayer = nil
@@ -220,7 +229,7 @@ final class PlaybackController: NSObject, ObservableObject, AVAudioPlayerDelegat
         do {
             let player = try AVAudioPlayer(contentsOf: url)
             player.enableRate = true
-            player.rate = defaultRate
+            player.rate = playbackRate
             player.delegate = self
             player.prepareToPlay()
             audioPlayer = player
@@ -310,7 +319,8 @@ final class PlaybackController: NSObject, ObservableObject, AVAudioPlayerDelegat
         info[MPMediaItemPropertyTitle] = url.lastPathComponent
         info[MPMediaItemPropertyPlaybackDuration] = duration
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
-        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? defaultRate : 0
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? playbackRate : 0
+        info[MPNowPlayingInfoPropertyDefaultPlaybackRate] = playbackRate
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 

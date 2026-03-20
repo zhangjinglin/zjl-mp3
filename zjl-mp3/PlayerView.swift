@@ -44,11 +44,26 @@ struct PlayerView: View {
                     Image(systemName: "goforward.30")
                         .font(.system(size: 32, weight: .regular))
                 }
-                Button {
-                    controller.next()
+
+                Menu {
+                    ForEach(PlaybackController.supportedPlaybackRates, id: \.self) { rate in
+                        Button {
+                            controller.setPlaybackRate(rate)
+                        } label: {
+                            if controller.playbackRate == rate {
+                                Label(formattedRate(rate), systemImage: "checkmark")
+                            } else {
+                                Text(formattedRate(rate))
+                            }
+                        }
+                    }
                 } label: {
-                    Image(systemName: "forward.end.fill")
-                        .font(.system(size: 36, weight: .regular))
+                    Label(formattedRate(controller.playbackRate), systemImage: "speedometer")
+                        .font(.system(size: 18, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color.secondary.opacity(0.14))
+                        .clipShape(Capsule())
                 }
             }
         }
@@ -61,5 +76,20 @@ struct PlayerView: View {
         let minutes = totalSeconds / 60
         let seconds = totalSeconds % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    private func formattedRate(_ rate: Float) -> String {
+        let rounded = Int(rate)
+        if Float(rounded) == rate {
+            return "\(rounded)x"
+        }
+        return "\(rate.cleanString)x"
+    }
+}
+
+private extension Float {
+    var cleanString: String {
+        let string = String(format: "%.2f", self)
+        return string.replacingOccurrences(of: #"(\.0+|0+)$"#, with: "", options: .regularExpression)
     }
 }
