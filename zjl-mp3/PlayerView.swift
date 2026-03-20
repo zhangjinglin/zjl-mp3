@@ -11,23 +11,46 @@ struct PlayerView: View {
     @ObservedObject var controller: PlaybackController
 
     var body: some View {
-        VStack(spacing: 12) {
-            Slider(value: Binding(
-                get: { controller.progress },
-                set: { controller.seek(to: $0) }
-            ))
-
+        VStack(spacing: 18) {
             HStack {
-                Text(formatTime(controller.currentTime))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Now Playing")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(AppTheme.secondaryText)
+                    Text(currentTrackTitle)
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundStyle(AppTheme.primaryText)
+                        .lineLimit(1)
+                }
                 Spacer()
-                Text(formatTime(controller.duration))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Text(formattedRate(controller.playbackRate))
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color.black.opacity(0.72))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(AppTheme.accent)
+                    .clipShape(Capsule())
             }
 
-            HStack(spacing: 28) {
+            VStack(spacing: 8) {
+                Slider(value: Binding(
+                    get: { controller.progress },
+                    set: { controller.seek(to: $0) }
+                ))
+                .tint(AppTheme.accent)
+
+                HStack {
+                    Text(formatTime(controller.currentTime))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(AppTheme.secondaryText)
+                    Spacer()
+                    Text(formatTime(controller.duration))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(AppTheme.secondaryText)
+                }
+            }
+
+            HStack(spacing: 16) {
                 Button {
                     if controller.isPlaying {
                         controller.pause()
@@ -35,14 +58,24 @@ struct PlayerView: View {
                         controller.play()
                     }
                 } label: {
-                    Image(systemName: controller.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44, weight: .regular))
+                    Image(systemName: controller.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 24, weight: .black))
+                        .frame(width: 64, height: 64)
+                        .background(AppTheme.accent)
+                        .foregroundStyle(Color.black.opacity(0.72))
+                        .clipShape(Circle())
+                        .shadow(color: AppTheme.accent.opacity(0.28), radius: 18, y: 8)
                 }
+
                 Button {
                     controller.skipForward(seconds: 30)
                 } label: {
                     Image(systemName: "goforward.30")
-                        .font(.system(size: 32, weight: .regular))
+                        .font(.system(size: 24, weight: .bold))
+                        .frame(width: 56, height: 56)
+                        .background(Color.white.opacity(0.07))
+                        .foregroundStyle(AppTheme.primaryText)
+                        .clipShape(Circle())
                 }
 
                 Menu {
@@ -58,16 +91,28 @@ struct PlayerView: View {
                         }
                     }
                 } label: {
-                    Label(formattedRate(controller.playbackRate), systemImage: "speedometer")
-                        .font(.system(size: 18, weight: .semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color.secondary.opacity(0.14))
-                        .clipShape(Capsule())
+                    HStack(spacing: 8) {
+                        Image(systemName: "speedometer")
+                        Text(formattedRate(controller.playbackRate))
+                    }
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppTheme.primaryText)
+                    .padding(.horizontal, 16)
+                    .frame(height: 56)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(Capsule())
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.bottom, 12)
+        .padding(20)
+        .background(AppTheme.panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: AppTheme.shadow, radius: 18, y: 8)
     }
 
     private func formatTime(_ value: Double) -> String {
@@ -85,9 +130,16 @@ struct PlayerView: View {
         }
         return "\(rate.cleanString)x"
     }
+
+    private var currentTrackTitle: String {
+        guard let index = controller.currentIndex, index < controller.playlist.count else {
+            return "No Track Selected"
+        }
+        return controller.playlist[index].deletingPathExtension().lastPathComponent
+    }
 }
 
-private extension Float {
+extension Float {
     var cleanString: String {
         let string = String(format: "%.2f", self)
         return string.replacingOccurrences(of: #"(\.0+|0+)$"#, with: "", options: .regularExpression)
